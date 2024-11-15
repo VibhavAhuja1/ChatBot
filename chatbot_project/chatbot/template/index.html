@@ -47,7 +47,7 @@
     </style>
 </head>
 <body>
- 
+
 <div class="chat-container">
     <h2>Chat with our AI Bot</h2>
     <div id="chat-box" class="chat-box">
@@ -56,11 +56,30 @@
     <div class="input-group">
         <input type="text" id="user-input" class="form-control" placeholder="Type your message..." />
         <button id="send-btn" class="btn btn-primary">Send</button>
+        <button id="history-btn" class="btn btn-secondary">History</button> <!-- New History Button -->
     </div>
+    
 </div>
- 
+
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
+    // CSRF Token Setup for Django POST Requests
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    const csrftoken = getCookie('csrftoken');
+
     $(document).ready(function () {
         // Function to append chat messages to the chat box
         function appendMessage(message, sender) {
@@ -69,17 +88,20 @@
             $('#chat-box').append(messageElement);
             $('#chat-box').scrollTop($('#chat-box')[0].scrollHeight); // Scroll to the bottom
         }
- 
+
         // Function to send user input to the backend
         function sendMessage(userText) {
             $.ajax({
-                url: '/api/chat/',  // Updated API endpoint
+                url: '/api/chat/',
                 type: 'POST',
                 contentType: 'application/json',
                 data: JSON.stringify({ text: userText }),
+                headers: {
+                    'X-CSRFToken': csrftoken
+                },
                 success: function (response) {
                     // Display the user's message and the bot's response
-                    appendMessage(response.user, 'user');
+                    appendMessage(userText, 'user');
                     appendMessage(response.response, 'bot');
                 },
                 error: function (xhr, status, error) {
@@ -88,17 +110,19 @@
                 }
             });
         }
- 
+
         // Send button click event
         $('#send-btn').click(function () {
+            console.log('helo1')
             var userText = $('#user-input').val();
             if (userText.trim() !== "") {
                 appendMessage(userText, 'user');
                 $('#user-input').val(""); // Clear input field
                 sendMessage(userText); // Send the message to the server
+                console.log(userText)
             }
         });
- 
+
         // Optionally, enable pressing 'Enter' to send the message
         $('#user-input').keypress(function (e) {
             if (e.which === 13) {  // Enter key
@@ -106,7 +130,47 @@
             }
         });
     });
+
+
+    $(document).ready(function () {
+    // Function to add messages to the chat box
+    function appendMessage(message, sender) {
+        const messageElement = $('<div class="chat-message ' + sender + '"></div>');
+        messageElement.text(message);
+        $('#chat-box').append(messageElement);
+        $('#chat-box').scrollTop($('#chat-box')[0].scrollHeight);  // Scroll to the bottom
+    }
+
+    // Function to fetch and show chat history
+    function fetchChatHistory() {
+        $.ajax({
+           url: '/api/chat/history/',  // URL of the history view
+            type: 'GET',
+            success: function (response) {
+                $('#chat-box').empty();  // Clear the chat box
+
+                // Loop through each message and add it to the chat box
+                response.chat_history.reverse().forEach(function (chat) {
+                    appendMessage(chat.message, chat.sender);
+                });
+            },
+            error: function () {
+                appendMessage("Unable to load chat history.", 'bot');
+            }
+        });
+    }
+
+    // Event for clicking the History button
+    $('#history-btn').click(function () {
+        fetchChatHistory();  // Fetch and display chat history
+    });
+});
+
+
+
+
+
 </script>
- 
+
 </body>
 </html>

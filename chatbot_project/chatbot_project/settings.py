@@ -58,7 +58,7 @@ import os
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [r'D:\Ollama\Django\chatbot_project\chatbot\template'],
+        'DIRS': [r'D:\Ollama\ChatBot\chatbot_project\chatbot\template'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
